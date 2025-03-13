@@ -18,14 +18,14 @@ Vagrant.configure("2") do |config|
     vbox.vm.network "private_network", ip: "192.168.56.30"
     vbox.vm.network "public_network", ip: "192.168.1.30"
     vbox.vm.provider "virtualbox" do |vb|
-      vb.memory = "8192"
-      vb.cpus = 4
+      vb.memory = "16384"
+      vb.cpus = 6
       vb.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
     end
     
     # Add Ansible provisioning
     vbox.vm.provision "ansible" do |ansible|
-      ansible.playbook = "devstack-deploy.yml"
+      ansible.playbook = "ansible/devstack-deploy.yml"
     end
   end
 end
