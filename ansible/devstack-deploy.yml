@@ -7,6 +7,7 @@
     stack_home: /opt/stack
     devstack_repo: https://opendev.org/openstack/devstack
     admin_password: secret1234
+    HOST_IP: "{{ hostvars[inventory_hostname]['ansible_host'] }}"  # Use the IP from inventory
 
   tasks:
     - name: Create stack user
@@ -30,6 +31,16 @@
         content: "stack ALL=(ALL) NOPASSWD: ALL"
         mode: '0440'
 
+    - name: Create environment file for stack user
+      copy:
+        dest: "{{ stack_home }}/.bash_profile"
+        content: |
+          export HOME={{ stack_home }}
+          export USER={{ stack_user }}
+        owner: "{{ stack_user }}"
+        group: "{{ stack_user }}"
+        mode: '0644'
+
     - name: Install git
       apt:
         name: git
@@ -37,10 +48,10 @@
         update_cache: yes
 
     - name: Clone DevStack repository
-      git:
-        repo: "{{ devstack_repo }}"
-        dest: "{{ stack_home }}/devstack"
-      become_user: "{{ stack_user }}"
+      shell: |
+        sudo -u {{ stack_user }} git clone {{ devstack_repo }} {{ stack_home }}/devstack
+      args:
+        creates: "{{ stack_home }}/devstack"
 
     - name: Create local.conf
       copy:
@@ -51,15 +62,14 @@
           DATABASE_PASSWORD=$ADMIN_PASSWORD
           RABBIT_PASSWORD=$ADMIN_PASSWORD
           SERVICE_PASSWORD=$ADMIN_PASSWORD
+          HOST_IP={{ HOST_IP }}
         owner: "{{ stack_user }}"
         group: "{{ stack_user }}"
         mode: '0644'
 
     - name: Run stack.sh
-      command: ./stack.sh
-      args:
-        chdir: "{{ stack_home }}/devstack"
-      become_user: "{{ stack_user }}"
+      shell: |
+        cd {{ stack_home }}/devstack && sudo -u {{ stack_user }} ./stack.sh
       async: 3600  # Allow up to 1 hour for installation
       poll: 0
       register: stack_result
