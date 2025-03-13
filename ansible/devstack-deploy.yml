@@ -1,0 +1,73 @@
+---
+- name: Deploy DevStack
+  hosts: openstack_vm
+  become: yes
+  vars:
+    stack_user: stack
+    stack_home: /opt/stack
+    devstack_repo: https://opendev.org/openstack/devstack
+    admin_password: secret1234
+
+  tasks:
+    - name: Create stack user
+      user:
+        name: "{{ stack_user }}"
+        shell: /bin/bash
+        home: "{{ stack_home }}"
+        create_home: yes
+        state: present
+
+    - name: Ensure stack home directory has correct permissions
+      file:
+        path: "{{ stack_home }}"
+        mode: '0755'
+        owner: "{{ stack_user }}"
+        group: "{{ stack_user }}"
+
+    - name: Add stack user to sudoers
+      copy:
+        dest: /etc/sudoers.d/stack
+        content: "stack ALL=(ALL) NOPASSWD: ALL"
+        mode: '0440'
+
+    - name: Install git
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+
+    - name: Clone DevStack repository
+      git:
+        repo: "{{ devstack_repo }}"
+        dest: "{{ stack_home }}/devstack"
+      become_user: "{{ stack_user }}"
+
+    - name: Create local.conf
+      copy:
+        dest: "{{ stack_home }}/devstack/local.conf"
+        content: |
+          [[local|localrc]]
+          ADMIN_PASSWORD={{ admin_password }}
+          DATABASE_PASSWORD=$ADMIN_PASSWORD
+          RABBIT_PASSWORD=$ADMIN_PASSWORD
+          SERVICE_PASSWORD=$ADMIN_PASSWORD
+        owner: "{{ stack_user }}"
+        group: "{{ stack_user }}"
+        mode: '0644'
+
+    - name: Run stack.sh
+      command: ./stack.sh
+      args:
+        chdir: "{{ stack_home }}/devstack"
+      become_user: "{{ stack_user }}"
+      async: 3600  # Allow up to 1 hour for installation
+      poll: 0
+      register: stack_result
+
+    - name: Check stack.sh progress
+      async_status:
+        jid: "{{ stack_result.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 360  # Check every 10 seconds for 1 hour
+      delay: 10 
