@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.box_check_update = false
-  config.vm.box = "bento/ubuntu-24.04"
+  config.vm.box = "bento/ubuntu-22.04"
 
   # Provision SSH key
   config.vm.provision "shell" do |s|
@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
   config.vm.define "vbox" do |vbox|
     vbox.vm.hostname = "devstack"
     vbox.vm.network "private_network", ip: "192.168.56.30"
-    vbox.vm.network "public_network", ip: "192.168.1.30"
+    # vbox.vm.network "public_network", ip: "192.168.1.30"
     vbox.vm.provider "virtualbox" do |vb|
       vb.memory = "16384"
       vb.cpus = 6
