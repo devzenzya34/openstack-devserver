@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.box_check_update = false
-  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.box = "bento/ubuntu-24.04"
 
   # Provision SSH key
   config.vm.provision "shell" do |s|
@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define "vbox" do |vbox|
-    vbox.vm.hostname = "openstack-vm"
+    vbox.vm.hostname = "devstack"
     vbox.vm.network "private_network", ip: "192.168.56.30"
     vbox.vm.network "public_network", ip: "192.168.1.30"
     vbox.vm.provider "virtualbox" do |vb|
@@ -23,10 +23,10 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
     end
     
-    # Add Ansible provisioning
-    vbox.vm.provision "ansible" do |ansible|
-      ansible.playbook = "ansible/devstack-deploy.yml"
-    end
+    # # Add Ansible provisioning
+    # vbox.vm.provision "ansible" do |ansible|
+    #   ansible.playbook = "ansible/devstack-deploy.yml"
+    # end
   end
 end
 
