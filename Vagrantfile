@@ -15,7 +15,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "vbox" do |vbox|
     vbox.vm.hostname = "devstack"
-    vbox.vm.network "private_network", ip: "192.168.56.30"
+    vbox.vm.network "private_network", ip: "192.168.56.32"
     # vbox.vm.network "public_network", ip: "192.168.1.30"
     vbox.vm.provider "virtualbox" do |vb|
       vb.memory = "16384"

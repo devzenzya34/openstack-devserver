@@ -1,0 +1,14 @@
+
+all:
+  children:
+    openstack_vm:
+      hosts:
+        devstack:
+          ansible_host: 192.168.56.32
+          ansible_user: vagrant
+          ansible_ssh_private_key_file: ~/.vagrant.d/insecure_private_key
+
+
+
+# [devstack]
+# openstack_vm ansible_host=192.168.56.30 ansible_user=vagrant ansible_ssh_port=22

@@ -3,3 +3,4 @@
 .vagrant/*
 /keys/*
 note.txt
+/ansible/group_vars/all.yml

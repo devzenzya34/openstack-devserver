@@ -2,12 +2,11 @@
 - name: Deploy DevStack
   hosts: openstack_vm
   become: yes
-  vars:
-    stack_user: stack
-    stack_home: /opt/stack
-    devstack_repo: https://opendev.org/openstack/devstack
-    admin_password: secret1234
-    HOST_IP: "{{ hostvars[inventory_hostname]['ansible_host'] }}"  # Use the IP from inventory
+
+  pre_tasks:
+    - name: Include variables
+      include_vars:
+        file: group_vars/all.yml
 
   tasks:
     - name: Create stack user
@@ -32,11 +31,9 @@
         mode: '0440'
 
     - name: Create environment file for stack user
-      copy:
+      template:
+        src: templates/bash_profile.j2
         dest: "{{ stack_home }}/.bash_profile"
-        content: |
-          export HOME={{ stack_home }}
-          export USER={{ stack_user }}
         owner: "{{ stack_user }}"
         group: "{{ stack_user }}"
         mode: '0644'
@@ -47,37 +44,82 @@
         state: present
         update_cache: yes
 
-    - name: Clone DevStack repository
+    - name: Switch to stack user
+      become: yes
+      become_user: "{{ stack_user }}"
       shell: |
-        sudo -u {{ stack_user }} git clone {{ devstack_repo }} {{ stack_home }}/devstack
-      args:
-        creates: "{{ stack_home }}/devstack"
+        whoami
+      register: current_user
+      
+    - name: Debug current user
+      debug:
+        var: current_user.stdout
+
+    - name: Clone DevStack repository
+      become: yes
+      become_user: "{{ stack_user }}"
+      git:
+        repo: "{{ devstack_repo }}"
+        dest: "{{ stack_home }}/devstack"
+        force: no
+      register: git_clone_result
+
+    - name: Debug git clone
+      debug:
+        var: git_clone_result
+
+    # Ensure proper ownership of the devstack directory
+    - name: Ensure devstack directory ownership
+      file:
+        path: "{{ stack_home }}/devstack"
+        owner: "{{ stack_user }}"
+        group: "{{ stack_user }}"
+        recurse: yes
+        state: directory
+      when: git_clone_result.changed
 
     - name: Create local.conf
-      copy:
+      template:
+        src: templates/local.conf.j2
         dest: "{{ stack_home }}/devstack/local.conf"
-        content: |
-          [[local|localrc]]
-          ADMIN_PASSWORD={{ admin_password }}
-          DATABASE_PASSWORD=$ADMIN_PASSWORD
-          RABBIT_PASSWORD=$ADMIN_PASSWORD
-          SERVICE_PASSWORD=$ADMIN_PASSWORD
-          HOST_IP={{ HOST_IP }}
         owner: "{{ stack_user }}"
         group: "{{ stack_user }}"
         mode: '0644'
+    
+    - name: Verify stack user before installation
+      become: yes
+      become_user: "{{ stack_user }}"
+      shell: |
+        echo "Current user: $(whoami)"
+        echo "Current directory: $(pwd)"
+        echo "Home directory: $HOME"
+      register: user_check
+      
+    - name: Debug user verification
+      debug:
+        var: user_check.stdout_lines
 
     - name: Run stack.sh
+      become: yes
+      become_user: "{{ stack_user }}"
       shell: |
-        cd {{ stack_home }}/devstack && sudo -u {{ stack_user }} ./stack.sh
+        cd {{ stack_home }}/devstack && ./stack.sh
+      environment:
+        HOME: "{{ stack_home }}"
+        USER: "{{ stack_user }}"
       async: 3600  # Allow up to 1 hour for installation
       poll: 0
       register: stack_result
 
     - name: Check stack.sh progress
+      become: yes
+      become_user: "{{ stack_user }}"
       async_status:
         jid: "{{ stack_result.ansible_job_id }}"
       register: job_result
       until: job_result.finished
       retries: 360  # Check every 10 seconds for 1 hour
-      delay: 10 
+      delay: 10
+      environment:
+        HOME: "{{ stack_home }}"
+        USER: "{{ stack_user }}"
