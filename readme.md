@@ -19,7 +19,8 @@
             addresses:
             - 8.8.8.8  # Serveur DNS
             - 8.8.4.4
-### 3 - sudo netplan apply
+### 3 - Apply netplan
+    sudo netplan apply
 ### 4 - Launch ubuntu Serveur
     ip a 
 ### 5 - Check connection:
@@ -27,9 +28,9 @@
     from hote: ping <ADRESSE_IP_HOTE>
 
 ### 6 - Open Vm console:
-    new user stack
-    sudo useradd -s /bin/bash -d /opt/stack -m stack
-    sudo chmod +x /opt/stack
+    Create new user stack:
+        sudo useradd -s /bin/bash -d /opt/stack -m stack
+        sudo chmod +x /opt/stack
 ### 7 - change to stack user
     echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
     sudo -u stack -i
