@@ -23,18 +23,17 @@
     sudo netplan apply
 ### 4 - Launch ubuntu Serveur
     ip a 
-### 5 - Check connection:
+### 5 - Check connection:
     from server: ping <ADRESSE_IP_HOTE>
     from hote: ping <ADRESSE_IP_HOTE>
 
-### 6 - Open Vm console:
-    Create new user stack:
+### 6 - Open Vm console and Create new user stack:
         sudo useradd -s /bin/bash -d /opt/stack -m stack
         sudo chmod +x /opt/stack
-### 7 - change to stack user
+### 7 - change to stack user
     echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
     sudo -u stack -i
-### 8 - clone devstack repo 
+### 8 - clone devstack repo 
     sudo git clone https://opendev.org/openstack/devstack
     cd devstack
 ### 9 -  create a local.conf at root of devstack folder (no sudo)
